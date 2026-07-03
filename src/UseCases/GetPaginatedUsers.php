@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\UseCases;
 
 use App\Contracts\UserRepositoryInterface;
+use App\Enums\SortableUserColumns;
 
 // Handles pagination, sorting, and page clamping in one place.
 // Both the HTML controller and the API controller delegate to this — no duplication.
@@ -39,8 +40,11 @@ final class GetPaginatedUsers
 
     private function resolveSortColumn(string $sort): string
     {
-        // Whitelist to prevent ORDER BY injection — PDO can't parameterize column names
-        $allowed = ['id', 'login', 'first_name', 'last_name', 'gender', 'birth_date', 'created_at', 'updated_at'];
-        return in_array($sort, $allowed, true) ? $sort : 'login';
+        // Whitelist to prevent ORDER BY injection — PDO can't parameterize column names.
+        // Uses the shared SortableUserColumns::ALLOWED so this list can't silently
+        // diverge from the second check inside UserRepository.
+        return in_array($sort, SortableUserColumns::ALLOWED, true)
+            ? $sort
+            : SortableUserColumns::DEFAULT;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Repositories;
 
 use App\Contracts\UserRepositoryInterface;
 use App\Core\Database;
+use App\Enums\SortableUserColumns;
 use App\Models\User;
 use App\Models\UserListItem;
 use PDO;
@@ -23,23 +24,32 @@ class UserRepository implements UserRepositoryInterface
      */
     public function getPaginatedList(int $page, string $sort, string $dir, int $perPage): array
     {
-        // Defence-in-depth: validate sort/dir even though GetPaginatedUsers already did it upstream.
-        // Both whitelists must stay in sync — see GetPaginatedUsers::resolveSortColumn.
-        $allowed = ['id', 'login', 'first_name', 'last_name', 'gender', 'birth_date', 'created_at', 'updated_at'];
-        $sort = in_array($sort, $allowed, true) ? $sort : 'login';
-        $dir  = strtolower($dir) === 'desc' ? 'desc' : 'asc';
+        // Second whitelist check — repository doesn't trust the caller blindly.
+        // Uses the same SortableUserColumns::ALLOWED constant as GetPaginatedUsers
+        // so both layers are guaranteed to stay in sync (one source of truth, two checkpoints).
+        $sort   = in_array($sort, SortableUserColumns::ALLOWED, true) ? $sort : SortableUserColumns::DEFAULT;
+        $dir    = strtolower($dir) === 'desc' ? 'desc' : 'asc';  // closed set of two values, no injection risk
         $offset = ($page - 1) * $perPage;
 
-        // $sort is safe (whitelisted above), so inline interpolation here is fine.
-        // LIMIT/OFFSET go through bindValue because PDO can't parameterize those.
+        // Safe to interpolate $sort directly: by this point it is no longer raw user input —
+        // it's one of a fixed set of column name literals validated above.
+        // PDO cannot bind column identifiers as parameters, so interpolation after whitelisting
+        // is the correct approach here. Do not attempt to replace with a bind parameter.
+        // $dir is equally safe: the ternary above guarantees it's either 'asc' or 'desc'.
+        //
+        // LIMIT and OFFSET are bound via bindValue(PARAM_INT) — not bindParam — because:
+        //   - bindValue reads the value immediately (semantically cleaner, no dependency on
+        //     the variable not changing before execute())
+        //   - PARAM_INT ensures MySQL treats '10' as a number, not a string, which matters
+        //     when ATTR_EMULATE_PREPARES = false (true prepared statements, as configured).
         $stmt = $this->db->prepare("
             SELECT id, login, first_name, last_name, gender, birth_date, created_at, updated_at
             FROM users
             ORDER BY `{$sort}` {$dir}
             LIMIT :limit OFFSET :offset
         ");
-        $stmt->bindValue('limit', $perPage, PDO::PARAM_INT);
-        $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
+        $stmt->bindValue('limit',  $perPage, PDO::PARAM_INT);
+        $stmt->bindValue('offset', $offset,  PDO::PARAM_INT);
         $stmt->execute();
 
         $rows = $stmt->fetchAll();
