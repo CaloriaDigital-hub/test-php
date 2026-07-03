@@ -1,0 +1,28 @@
+
+services:
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    environment:
+      # These environment variables will override the .env file 
+      # because EnvLoader respects existing getenv() variables.
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=test_db
+      - DB_USER=root
+      - DB_PASS=secret
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_DATABASE: test_db
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-psecret"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
