@@ -82,7 +82,7 @@ $authMw = new App\Core\Middleware\AuthMiddleware();
 // Public routes (no auth required)
 $router->add('GET',  '/login',  $loginFormCtrl);
 $router->add('POST', '/login',  $processLoginCtrl);
-$router->add('GET',  '/logout', $logoutCtrl);
+$router->add('POST', '/logout', $logoutCtrl);
 
 // Protected routes (auth required via middleware)
 $router->group([$authMw], function (App\Core\Router $r) use (

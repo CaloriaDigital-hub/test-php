@@ -81,6 +81,12 @@ a {
 .nav-logout {
     font-size: 0.875rem;
     color: var(--danger);
+    /* reset button defaults so it looks identical to the old <a> tag */
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    font-family: inherit;
 }
 .nav-logout:hover {
     color: var(--danger-hover);

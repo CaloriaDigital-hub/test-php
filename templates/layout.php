@@ -21,7 +21,10 @@ use App\Core\Session;
                 </div>
                 <div class="nav-user">
                     <span class="nav-user-name"><?= e($_SESSION['admin_username'] ?? '') ?></span>
-                    <a href="/logout" class="nav-logout">Logout</a>
+                    <form method="post" action="/logout" style="display:inline;">
+                        <?= \App\Core\Csrf::getField() ?>
+                        <button type="submit" class="nav-logout">Logout</button>
+                    </form>
                 </div>
             </div>
         </nav>

@@ -17,6 +17,7 @@ ob_start();
             <?php endif; ?>
             
             <form method="post" action="/login">
+                <?= \App\Core\Csrf::getField() ?>
                 <div class="form-group">
                     <label for="username" class="form-label">Username</label>
                     <input type="text" name="username" id="username" class="form-control" required autofocus placeholder="admin">
