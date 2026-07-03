@@ -6,10 +6,22 @@ use PDO;
 use RuntimeException;
 
 /**
- * PDO singleton with explicit initialization.
+ * PDO singleton with explicit two-step initialization.
  *
- * Call Database::init($config) once at bootstrap.
- * Use Database::setInstance($pdo) to inject a mock/test connection.
+ * Call Database::init($config) once in the bootstrap (public/index.php).
+ * After that, any class can call Database::getInstance() to get the connection.
+ *
+ * Why a Singleton and not constructor injection?
+ * For a project of this scale (2 repositories) a Singleton is a pragmatic trade-off:
+ * it avoids passing $pdo through every constructor manually while still guaranteeing
+ * a single connection per request. In a larger project the PDO instance would be
+ * wired explicitly through the DI container and this class would not exist.
+ *
+ * init() and getInstance() are intentionally separate (no lazy-init inside getInstance).
+ * If bootstrap forgets to call init(), the caller gets an immediate, descriptive
+ * RuntimeException instead of a confusing failure deep inside a repository.
+ *
+ * Use setInstance() to inject a mock/test PDO without touching bootstrap.
  */
 class Database
 {
